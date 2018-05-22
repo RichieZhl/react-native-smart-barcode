@@ -18,6 +18,10 @@
 {
     
     if ((self = [super init])) {
+        self.scannerRectWidth = 0;
+        self.scannerRectHeight = 0;
+        self.scannerRectTop = 0;
+        self.scannerRectLeft = 0;
         self.manager = manager;
         [self.manager initializeCaptureSessionInput:AVMediaTypeVideo];
         [self.manager startSession];
@@ -61,12 +65,21 @@
     
 //    NSLog(@"updateLayout...");
     
-    int scannerRectWidth = self.scannerRectWidth;//300;
-    int scannerRectHeight = self.scannerRectHeight;//300;
+    CGFloat scannerRectWidth = self.scannerRectWidth == 0 ? 300 : self.scannerRectWidth;//300;
+    CGFloat scannerRectHeight = self.scannerRectHeight == 0 ? 300 : self.scannerRectHeight;//300;
     
     CGRect cameraRect = self.bounds;
+    
+    CGFloat scannerTop = self.scannerRectTop;
+    CGFloat scannerLeft = self.scannerRectLeft;
+    if (scannerTop == 0) {
+        scannerTop = (cameraRect.size.height - scannerRectHeight) / 2;
+    }
+    if (scannerLeft == 0) {
+        scannerLeft = (cameraRect.size.width - scannerRectWidth) / 2;
+    }
     //中间的矩形框
-    self.scannerRect = CGRectMake( (cameraRect.size.width - scannerRectWidth) / 2, (cameraRect.size.height - scannerRectHeight) / 2, scannerRectWidth, scannerRectHeight);
+    self.scannerRect = CGRectMake( scannerLeft, scannerTop, scannerRectWidth, scannerRectHeight);
 
     RectView *view = [[RectView alloc] initWithScannerRect:self.scannerRect frame:self.bounds scannerRectCornerColor:self.scannerRectCornerColor];
 //    RectView *view = [[RectView alloc] initWithFrame:self.bounds];
@@ -164,7 +177,7 @@
     CGRect readerFrame = self.frame;
     CGSize viewFinderSize = self.scannerRect.size;
     CGRect scanLineframe = self.scanLine.frame;
-    scanLineframe.origin.y = (readerFrame.size.height - viewFinderSize.height)/2;
+    scanLineframe.origin.y = self.scannerRect.origin.y;
     self.scanLine.frame = scanLineframe;
     self.scanLine.hidden = NO;
     __weak __typeof(self) weakSelf = self;
@@ -172,7 +185,7 @@
                      animations:^{
                          CGRect scanLineframe = weakSelf.scanLine.frame;
                          scanLineframe.origin.y =
-                         (readerFrame.size.height + viewFinderSize.height)/2 -
+                         self.scannerRect.origin.y + viewFinderSize.height -
                          weakSelf.scanLine.frame.size.height;
                          weakSelf.scanLine.frame = scanLineframe;
                      }
