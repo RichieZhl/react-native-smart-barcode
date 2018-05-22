@@ -105,6 +105,38 @@ RCT_CUSTOM_VIEW_PROPERTY(barCodeTypes, NSArray, RCTBarcode) {
     });
 }
 
+RCT_EXPORT_METHOD(startFlash){
+    AVCaptureDevice *device = [AVCaptureDevice defaultDeviceWithMediaType:AVMediaTypeVideo];
+    NSError *error;
+    if (device.hasTorch) {  // 判断设备是否有闪光灯
+        BOOL b = [device lockForConfiguration:&error];
+        if (!b) {
+            if (error) {
+                NSLog(@"lock torch configuration error:%@", error.localizedDescription);
+            }
+            return;
+        }
+        device.torchMode = AVCaptureTorchModeOn;
+        [device unlockForConfiguration];
+    }
+}
+
+RCT_EXPORT_METHOD(stopFlash){
+    AVCaptureDevice *device = [AVCaptureDevice defaultDeviceWithMediaType:AVMediaTypeVideo];
+    NSError *error;
+    if (device.hasTorch) {  // 判断设备是否有闪光灯
+        BOOL b = [device lockForConfiguration:&error];
+        if (!b) {
+            if (error) {
+                NSLog(@"lock torch configuration error:%@", error.localizedDescription);
+            }
+            return;
+        }
+        device.torchMode = AVCaptureTorchModeOff;
+        [device unlockForConfiguration];
+    }
+}
+
 RCT_EXPORT_METHOD(startSession) {
     #if TARGET_IPHONE_SIMULATOR
     return;
@@ -242,9 +274,10 @@ RCT_EXPORT_METHOD(stopSession) {
 
 - (void)captureOutput:(AVCaptureOutput *)captureOutput didOutputMetadataObjects:(NSArray *)metadataObjects fromConnection:(AVCaptureConnection *)connection {
 //    NSLog(@"captureOutput!!!");
-    for (AVMetadataMachineReadableCodeObject *metadata in metadataObjects) {
-//        NSLog(@"AVMetadataMachineReadableCodeObject!!!");
-//        NSLog(@"type = %@, data = %@", metadata.type, metadata.stringValue);
+    if (metadataObjects != NULL && metadataObjects.count > 0) {
+        AVMetadataMachineReadableCodeObject *metadata = metadataObjects.firstObject;
+        //        NSLog(@"AVMetadataMachineReadableCodeObject!!!");
+        //        NSLog(@"type = %@, data = %@", metadata.type, metadata.stringValue);
         for (id barcodeType in self.barCodeTypes) {
             if ([metadata.type isEqualToString:barcodeType]) {
                 if (!self.barcode.onBarCodeRead) {
@@ -253,13 +286,13 @@ RCT_EXPORT_METHOD(stopSession) {
                 
                 AudioServicesPlaySystemSound(self.beep_sound_id);
                 
-//                NSLog(@"type = %@, data = %@", metadata.type, metadata.stringValue);
+                //                NSLog(@"type = %@, data = %@", metadata.type, metadata.stringValue);
                 self.barcode.onBarCodeRead(@{
-                                              @"data": @{
-                                                        @"type": metadata.type,
-                                                        @"code": metadata.stringValue,
-                                              },
-                                            });
+                                             @"data": @{
+                                                     @"type": metadata.type,
+                                                     @"code": metadata.stringValue,
+                                                     },
+                                             });
             }
         }
     }
